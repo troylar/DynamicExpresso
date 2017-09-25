@@ -8,8 +8,8 @@ Statements are written using a subset of C# language specifications. Global vari
     <Authors>Davide Icardi</Authors>
     <TargetFrameworks>netstandard1.5;netcoreapp1.1;net40</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <AssemblyName>DynamicExpresso.Core</AssemblyName>
-    <PackageId>DynamicExpresso.Core</PackageId>
+    <AssemblyName>DynamicExpresso</AssemblyName>
+    <PackageId>DynamicExpresso</PackageId>
     <PackageTags>dynamic expresso;expression;linq;eval</PackageTags>
     <PackageProjectUrl>https://github.com/davideicardi/DynamicExpresso</PackageProjectUrl>
     <PackageTargetFallback Condition=" '$(TargetFramework)' != 'net40' ">$(PackageTargetFallback);dotnet5.6;portable-net45+win8</PackageTargetFallback>
