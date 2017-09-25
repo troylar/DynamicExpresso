@@ -395,8 +395,12 @@ namespace DynamicExpresso.Parsing
 					var lambda = expr as LambdaExpression;
 					if (lambda != null)
 						return ParseLambdaInvocation(lambda, tokenPos);
+#if NET_COREAPP
+					else if (typeof(Delegate).GetTypeInfo().IsAssignableFrom(expr.Type))
+#else
 					else if (typeof(Delegate).IsAssignableFrom(expr.Type))
-						expr = ParseDelegateInvocation(expr, tokenPos);
+#endif
+                        expr = ParseDelegateInvocation(expr, tokenPos);
 					else
 						throw CreateParseException(tokenPos, ErrorMessages.InvalidMethodCall, GetTypeName(expr.Type));
 				}
@@ -730,8 +734,12 @@ namespace DynamicExpresso.Parsing
 			NextToken();
 			var args = ParseArgumentList();
 
+#if NET_COREAPP
+			var constructor = newType.GetTypeInfo().GetConstructor(args.Select(p => p.Type).ToArray());
+#else
 			var constructor = newType.GetConstructor(args.Select(p => p.Type).ToArray());
-			if (constructor == null)
+#endif
+            if (constructor == null)
 				throw CreateParseException(_token.pos, ErrorMessages.NoApplicableConstructor, newType);
 
 			return Expression.MemberInit(Expression.New(constructor, args));
@@ -1091,20 +1099,28 @@ namespace DynamicExpresso.Parsing
 
 		static bool IsDynamicType(Type type)
 		{
+#if NET_COREAPP
+			return typeof(IDynamicMetaObjectProvider).GetTypeInfo().IsAssignableFrom(type);
+#else
 			return typeof(IDynamicMetaObjectProvider).IsAssignableFrom(type);
-		}
+#endif
+        }
 
-		static bool IsDynamicExpression(Expression instance)
+        static bool IsDynamicExpression(Expression instance)
 		{
 			return instance != null && instance.NodeType == ExpressionType.Dynamic;
 		}
 
 		static Type GetNonNullableType(Type type)
 		{
+#if NET_COREAPP
+			return IsNullableType(type) ? type.GetTypeInfo().GetGenericArguments()[0] : type;
+#else
 			return IsNullableType(type) ? type.GetGenericArguments()[0] : type;
-		}
+#endif
+        }
 
-		static string GetTypeName(Type type)
+        static string GetTypeName(Type type)
 		{
 			var baseType = GetNonNullableType(type);
 			var s = baseType.Name;
@@ -1198,8 +1214,8 @@ namespace DynamicExpresso.Parsing
 			foreach (var t in SelfAndBaseTypes(type))
 			{
 #if NET_COREAPP
-                var fields = t.GetFields(flags).Select(f => f as MemberInfo);
-                var properties = t.GetProperties(flags).Select(p => p as MemberInfo);
+                var fields = t.GetTypeInfo().GetFields(flags).Select(f => f as MemberInfo);
+                var properties = t.GetTypeInfo().GetProperties(flags).Select(p => p as MemberInfo);
 			    var members = fields.Concat(properties)
 			        .Where(f => _arguments.Settings.CaseInsensitive
 			                    ? f.Name.Equals(memberName, StringComparison.CurrentCultureIgnoreCase)
@@ -1228,7 +1244,7 @@ namespace DynamicExpresso.Parsing
 			foreach (var t in SelfAndBaseTypes(type))
 			{
 #if NET_COREAPP
-                var members = t.GetMethods(flags)
+                var members = t.GetTypeInfo().GetMethods(flags)
                     .Where(m => _arguments.Settings.CaseInsensitive
                                 ? m.Name.Equals(methodName, StringComparison.CurrentCultureIgnoreCase)
                                 : m.Name == methodName)
@@ -1257,8 +1273,12 @@ namespace DynamicExpresso.Parsing
 		{
 			foreach (var t in SelfAndBaseTypes(type))
 			{
+#if NET_COREAPP
+				MemberInfo[] members = t.GetTypeInfo().GetDefaultMembers();
+#else
 				MemberInfo[] members = t.GetDefaultMembers();
-				if (members.Length != 0)
+#endif
+                if (members.Length != 0)
 				{
 					IEnumerable<MethodBase> methods = members.
 							OfType<PropertyInfo>().
@@ -1310,9 +1330,13 @@ namespace DynamicExpresso.Parsing
 			if (!types.Contains(type))
 			{
 				types.Add(type);
-				foreach (Type t in type.GetInterfaces())
-				{
-					AddInterface(types, t);
+#if NET_COREAPP
+                foreach (Type t in type.GetTypeInfo().GetInterfaces())
+#else
+                foreach (Type t in type.GetInterfaces())
+#endif
+                {
+                    AddInterface(types, t);
 				}
 			}
 		}
@@ -1457,9 +1481,13 @@ namespace DynamicExpresso.Parsing
                 else if (requestedType.ContainsGenericParameters)
 #endif
                 {
+#if NET_COREAPP
+                    var innerGenericTypes = ExtractActualGenericArguments(requestedType.GetTypeInfo().GetGenericArguments(), actualType.GetTypeInfo().GetGenericArguments());
+#else
                     var innerGenericTypes = ExtractActualGenericArguments(requestedType.GetGenericArguments(), actualType.GetGenericArguments());
+#endif
 
-					extractedGenericTypes.AddRange(innerGenericTypes);
+                    extractedGenericTypes.AddRange(innerGenericTypes);
 				}
 			}
 
@@ -1589,9 +1617,13 @@ namespace DynamicExpresso.Parsing
             if (!target.IsValueType)
 #endif
             {
+#if NET_COREAPP
+                return target.GetTypeInfo().IsAssignableFrom(source);
+#else
                 return target.IsAssignableFrom(source);
-			}
-			var st = GetNonNullableType(source);
+#endif
+            }
+            var st = GetNonNullableType(source);
 			var tt = GetNonNullableType(target);
 			if (st != source && tt == target) return false;
 
@@ -1720,9 +1752,13 @@ namespace DynamicExpresso.Parsing
 		// from http://stackoverflow.com/a/1075059/209727
 		static Type FindAssignableGenericType(Type givenType, Type genericTypeDefinition)
 		{
+#if NET_COREAPP
+			var interfaceTypes = givenType.GetTypeInfo().GetInterfaces();
+#else
 			var interfaceTypes = givenType.GetInterfaces();
+#endif
 
-			foreach (var it in interfaceTypes)
+            foreach (var it in interfaceTypes)
 			{
 #if NET_COREAPP
                 if (it.GetTypeInfo().IsGenericType && it.GetGenericTypeDefinition() == genericTypeDefinition)
@@ -1804,9 +1840,14 @@ namespace DynamicExpresso.Parsing
 			if (s == t1) return 1;
 			if (s == t2) return -1;
 
-			bool assignableT1 = t1.IsAssignableFrom(s);
-			bool assignableT2 = t2.IsAssignableFrom(s);
-			if (assignableT1 && !assignableT2) return 1;
+#if NET_COREAPP
+            bool assignableT1 = t1.GetTypeInfo().IsAssignableFrom(s);
+            bool assignableT2 = t2.GetTypeInfo().IsAssignableFrom(s);
+#else
+            bool assignableT1 = t1.IsAssignableFrom(s);
+            bool assignableT2 = t2.IsAssignableFrom(s);
+#endif
+            if (assignableT1 && !assignableT2) return 1;
 			if (assignableT2 && !assignableT1) return -1;
 
 			bool compatibleT1t2 = IsCompatibleWith(t1, t2);
@@ -1896,16 +1937,24 @@ namespace DynamicExpresso.Parsing
 		{
 			return Expression.Call(
 					null,
+#if NET_COREAPP
+					typeof(string).GetTypeInfo().GetMethod("Concat", new[] { typeof(object), typeof(object) }),
+#else
 					typeof(string).GetMethod("Concat", new[] { typeof(object), typeof(object) }),
-					new[] { left, right });
+#endif
+                    new[] { left, right });
 		}
 
 		MethodInfo GetStaticMethod(string methodName, Expression left, Expression right)
 		{
+#if NET_COREAPP
+			return left.Type.GetTypeInfo().GetMethod(methodName, new[] { left.Type, right.Type });
+#else
 			return left.Type.GetMethod(methodName, new[] { left.Type, right.Type });
-		}
+#endif
+        }
 
-		Expression GenerateStaticMethodCall(string methodName, Expression left, Expression right)
+        Expression GenerateStaticMethodCall(string methodName, Expression left, Expression right)
 		{
 			return Expression.Call(null, GetStaticMethod(methodName, left, right), new[] { left, right });
 		}

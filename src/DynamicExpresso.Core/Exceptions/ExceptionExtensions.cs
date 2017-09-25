@@ -30,11 +30,16 @@ namespace DynamicExpresso.Exceptions
 		{
 			try
 			{
+#if NET_COREAPP
+			    typeof(Exception).GetTypeInfo().GetMethods(
+			        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Single(m => m.Name == "PrepForRemoting")
+#else
 				typeof(Exception).GetMethod("PrepForRemoting",
-						System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-						.Invoke(exception, new object[0]);
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+#endif
+                        .Invoke(exception, new object[0]);
 
-            }
+			}
 			catch (Exception ex)
 			{
 				System.Diagnostics.Debug.Assert(false, ex.Message);

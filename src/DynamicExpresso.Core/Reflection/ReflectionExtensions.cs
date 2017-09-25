@@ -12,8 +12,12 @@ namespace DynamicExpresso.Reflection
 	{
 		public static DelegateInfo GetDelegateInfo(Type delegateType, params string[] parametersNames)
 		{
+#if NET_COREAPP
+			MethodInfo method = delegateType.GetTypeInfo().GetMethod("Invoke");
+#else
 			MethodInfo method = delegateType.GetMethod("Invoke");
-			if (method == null)
+#endif
+            if (method == null)
 				throw new ArgumentException("The specified type is not a delegate");
 
 			var delegateParameters = method.GetParameters();
@@ -44,8 +48,12 @@ namespace DynamicExpresso.Reflection
             if (typeInfo.IsSealed && typeInfo.IsAbstract && !typeInfo.IsGenericType && !typeInfo.IsNested)
 #endif
             {
+#if NET_COREAPP
+                var query = from method in type.GetTypeInfo().GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+#else
                 var query = from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-										where method.IsDefined(typeof(System.Runtime.CompilerServices.ExtensionAttribute), false)
+#endif
+                            where method.IsDefined(typeof(System.Runtime.CompilerServices.ExtensionAttribute), false)
 										select method;
 				return query;
 			}
