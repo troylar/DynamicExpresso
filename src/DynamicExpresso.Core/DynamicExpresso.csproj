@@ -5,7 +5,7 @@
 Using Dynamic Expresso developers can create scriptable applications, execute .NET code without compilation or create dynamic linq statements.
 Statements are written using a subset of C# language specifications. Global variables or parameters can be injected and used inside expressions. It doesn't generate assembly but it creates an expression tree on the fly.</Description>
     <Authors>Davide Icardi</Authors>
-    <TargetFrameworks>netstandard1.5;netcoreapp1.1;net40</TargetFrameworks>
+    <TargetFrameworks>netstandard1.5;netcoreapp1.0;netcoreapp1.1;net40</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>DynamicExpresso</AssemblyName>
     <PackageId>DynamicExpresso</PackageId>
@@ -60,6 +60,24 @@ Statements are written using a subset of C# language specifications. Global vari
     </PackageReference>
     <PackageReference Include="System.Reflection">
       <Version>4.3.0</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.0'">
+    <PackageReference Include="Microsoft.CSharp">
+      <Version>4.4.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.Dynamic.Runtime">
+      <Version>4.3.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.Globalization.Extensions">
+      <Version>4.3.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.Reflection">
+      <Version>4.3.0</Version>
+    </PackageReference>
+    <PackageReference Include="NETStandard.Library">
+      <Version>1.6.0</Version>
     </PackageReference>
   </ItemGroup>
 
