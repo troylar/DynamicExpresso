@@ -9,6 +9,7 @@ Statements are written using a subset of C# language specifications. Global vari
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>DynamicExpresso</AssemblyName>
     <PackageId>DynamicExpresso</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
     <PackageTags>dynamic expresso;expression;linq;eval</PackageTags>
     <PackageProjectUrl>https://github.com/davideicardi/DynamicExpresso</PackageProjectUrl>
     <PackageTargetFallback Condition=" '$(TargetFramework)' != 'net40' ">$(PackageTargetFallback);dotnet5.6;portable-net45+win8</PackageTargetFallback>
